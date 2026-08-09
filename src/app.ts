@@ -1,6 +1,7 @@
 import cors from 'cors'
 import express from 'express'
 import helmet from 'helmet'
+import { env } from './config/env'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { apiRouter } from './routes'
 
@@ -11,11 +12,17 @@ export function createApp() {
 
   app.use(helmet())
 
-  const corsOptions = {
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-    ],
+  // Origins come from CORS_ORIGINS (comma-separated). Use "*" to allow any.
+  const allowlist = env.corsOrigins
+  const corsOptions: cors.CorsOptions = {
+    origin(origin, callback) {
+      // Non-browser clients send no Origin header — always allow those.
+      if (!origin || allowlist.includes('*') || allowlist.includes(origin)) {
+        callback(null, true)
+        return
+      }
+      callback(null, false)
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
