@@ -1,6 +1,8 @@
+import 'reflect-metadata'
 import cors from 'cors'
-import express from 'express'
+import express, { type Request, type Response } from 'express'
 import helmet from 'helmet'
+import { AppDataSource } from './config/data-source'
 import { env } from './config/env'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { apiRouter } from './routes'
@@ -40,4 +42,33 @@ export function createApp() {
   app.use(errorHandler)
 
   return app
+}
+
+/**
+ * Serverless default export.
+ *
+ * Some platforms (e.g. Vercel) build this module directly and require a default
+ * export that is a request handler. The app is created once per warm container
+ * and the database connection is opened lazily and cached.
+ */
+const serverlessApp = createApp()
+let dbReady: Promise<unknown> | null = null
+
+export default async function handler(req: Request, res: Response) {
+  if (!AppDataSource.isInitialized) {
+    if (!dbReady) dbReady = AppDataSource.initialize()
+    try {
+      await dbReady
+    } catch (error) {
+      dbReady = null
+      console.error('[api] database initialization failed', error)
+      res.status(500).json({
+        success: false,
+        error: { code: 'DB_INIT_FAILED', message: 'Database connection failed' },
+      })
+      return
+    }
+  }
+
+  ;(serverlessApp as unknown as (req: Request, res: Response) => void)(req, res)
 }
