@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { accountsRouter } from '../modules/accounts/accounts.routes'
 import { transactionsRouter } from '../modules/accounts/transactions.routes'
+import { adminRouter } from '../modules/admin/admin.routes'
 import { authRouter } from '../modules/auth/auth.routes'
 import { cardsRouter } from '../modules/cards/cards.routes'
 import { transfersRouter } from '../modules/transfers/transfers.routes'
@@ -16,3 +17,4 @@ apiRouter.use('/accounts', accountsRouter)
 apiRouter.use('/transactions', transactionsRouter)
 apiRouter.use('/transfers', transfersRouter)
 apiRouter.use('/cards', cardsRouter)
+apiRouter.use('/admin', adminRouter)

@@ -49,6 +49,25 @@ export const adminListTransactionsQuerySchema = z.object({
   accountId: z.string().uuid().optional(),
 })
 
+export const adminTopUpSchema = z.object({
+  amount: z.coerce.number().positive().max(10_000_000),
+  description: z.string().trim().min(1).max(180).optional(),
+})
+
+export const adminListAccountsQuerySchema = z.object({
+  userId: z.string().uuid().optional(),
+})
+
+export const adminCreateTransactionSchema = z.object({
+  accountId: z.string().uuid(),
+  direction: z.enum(['credit', 'debit']),
+  amount: z.coerce.number().positive().max(10_000_000),
+  category: z.string().trim().min(1).max(40),
+  description: z.string().trim().min(1).max(180),
+  // Optional posting date; defaults to now when omitted.
+  date: z.coerce.date().optional(),
+})
+
 export const adminUpdateTransactionSchema = z
   .object({
     description: z.string().trim().min(1).max(180).optional(),
@@ -71,3 +90,6 @@ export type AdminCreateAccountInput = z.infer<typeof adminCreateAccountSchema>
 export type AdminUpdateAccountInput = z.infer<typeof adminUpdateAccountSchema>
 export type AdminListTransactionsQuery = z.infer<typeof adminListTransactionsQuerySchema>
 export type AdminUpdateTransactionInput = z.infer<typeof adminUpdateTransactionSchema>
+export type AdminTopUpInput = z.infer<typeof adminTopUpSchema>
+export type AdminListAccountsQuery = z.infer<typeof adminListAccountsQuerySchema>
+export type AdminCreateTransactionInput = z.infer<typeof adminCreateTransactionSchema>
