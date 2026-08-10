@@ -27,6 +27,7 @@ transfersRouter.use(authenticate)
 
 transfersRouter.get('/', asyncHandler(transfersController.list))
 transfersRouter.get('/summary', asyncHandler(transfersController.summary))
+transfersRouter.get('/config', asyncHandler(transfersController.config))
 transfersRouter.get('/resolve-account', asyncHandler(transfersController.resolve))
 transfersRouter.get('/:id', asyncHandler(transfersController.detail))
 

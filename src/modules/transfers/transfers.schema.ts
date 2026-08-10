@@ -30,12 +30,15 @@ export const internationalTransferSchema = z.object({
   sourceAccountId: z.string().uuid('Select a valid source account'),
   recipientName: z.string().trim().min(2).max(120),
   recipientAccountNumber: z.string().trim().min(6).max(40),
+  recipientAddress: z.string().trim().min(4, 'Enter the recipient address').max(255),
   bankName: z.string().trim().min(2).max(120),
+  bankCountry: z.string().trim().min(2, 'Enter the bank country').max(90),
+  bankAddress: z.string().trim().min(4, 'Enter the bank address').max(255),
   swiftCode: z
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z0-9]{8,11}$/, 'Enter a valid SWIFT/BIC code'),
+    .regex(/^[A-Z0-9]{8,11}$/, 'Enter a valid routing number or SWIFT/BIC code'),
   amount,
   description,
 })

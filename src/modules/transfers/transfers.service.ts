@@ -134,15 +134,19 @@ export async function createLocalTransfer(userId: string, input: LocalTransferIn
   })
 }
 
+/** Fee the international form previews before the transfer is submitted. */
+export function quoteInternationalFee(amount: number) {
+  return fromCents(Math.round((toCents(amount) * env.INTERNATIONAL_TRANSFER_FEE_PERCENT) / 100))
+}
+
 export async function createInternationalTransfer(
   userId: string,
   input: InternationalTransferInput,
 ) {
-  const fee = fromCents(
-    Math.round((toCents(input.amount) * env.INTERNATIONAL_TRANSFER_FEE_PERCENT) / 100),
-  )
-
-  return createExternalTransfer(userId, 'international', { ...input, fee })
+  return createExternalTransfer(userId, 'international', {
+    ...input,
+    fee: quoteInternationalFee(input.amount),
+  })
 }
 
 async function createExternalTransfer(
@@ -154,6 +158,9 @@ async function createExternalTransfer(
     recipientAccountNumber: string
     bankName: string
     swiftCode?: string | null
+    bankCountry?: string | null
+    bankAddress?: string | null
+    recipientAddress?: string | null
     amount: number
     description?: string
     fee: number
@@ -184,6 +191,9 @@ async function createExternalTransfer(
         recipientAccountNumber: input.recipientAccountNumber,
         recipientBankName: input.bankName,
         swiftCode: input.swiftCode ?? null,
+        bankCountry: input.bankCountry ?? null,
+        bankAddress: input.bankAddress ?? null,
+        recipientAddress: input.recipientAddress ?? null,
         description: input.description ?? null,
       }),
     )

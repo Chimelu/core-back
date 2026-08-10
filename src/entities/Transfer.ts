@@ -75,6 +75,16 @@ export class Transfer {
   @Column({ name: 'swift_code', type: 'varchar', length: 20, nullable: true })
   swiftCode: string | null
 
+  /** International only: where the receiving bank is located. */
+  @Column({ name: 'bank_country', type: 'varchar', length: 90, nullable: true })
+  bankCountry: string | null
+
+  @Column({ name: 'bank_address', type: 'varchar', length: 255, nullable: true })
+  bankAddress: string | null
+
+  @Column({ name: 'recipient_address', type: 'varchar', length: 255, nullable: true })
+  recipientAddress: string | null
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   description: string | null
 

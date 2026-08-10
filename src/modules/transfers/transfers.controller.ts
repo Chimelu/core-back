@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express'
+import { env } from '../../config/env'
 import { AppError } from '../../utils/AppError'
 import * as transfersService from './transfers.service'
 import {
@@ -23,6 +24,14 @@ export async function list(req: Request, res: Response) {
 export async function summary(req: Request, res: Response) {
   const data = await transfersService.getMonthlySummary(userId(req))
   res.json({ success: true, data })
+}
+
+/** Pricing the transfer forms need up front so previews match what is charged. */
+export async function config(_req: Request, res: Response) {
+  res.json({
+    success: true,
+    data: { internationalFeePercent: env.INTERNATIONAL_TRANSFER_FEE_PERCENT },
+  })
 }
 
 export async function resolve(req: Request, res: Response) {
