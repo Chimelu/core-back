@@ -24,6 +24,7 @@ adminRouter.patch(
   validateBody(updateUserSchema),
   asyncHandler(adminController.updateUser),
 )
+adminRouter.delete('/users/:id', asyncHandler(adminController.deleteUser))
 
 adminRouter.post(
   '/accounts',

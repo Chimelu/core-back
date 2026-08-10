@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express'
+import { AppError } from '../../utils/AppError'
 import * as adminService from './admin.service'
 import {
   adminListAccountsQuerySchema,
@@ -21,6 +22,12 @@ export async function listUsers(req: Request, res: Response) {
 export async function updateUser(req: Request, res: Response) {
   const user = await adminService.updateUser(req.params.id, req.body as UpdateUserInput)
   res.json({ success: true, data: { user } })
+}
+
+export async function deleteUser(req: Request, res: Response) {
+  if (!req.auth) throw AppError.unauthorized()
+  const data = await adminService.deleteUser(req.auth.sub, req.params.id)
+  res.json({ success: true, data })
 }
 
 export async function createAccount(req: Request, res: Response) {

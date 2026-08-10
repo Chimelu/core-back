@@ -1,7 +1,9 @@
 import { ILike, In } from 'typeorm'
 import { AppDataSource } from '../../config/data-source'
 import { Account } from '../../entities/Account'
+import { Card } from '../../entities/Card'
 import { Transaction } from '../../entities/Transaction'
+import { Transfer } from '../../entities/Transfer'
 import { User } from '../../entities/User'
 import { AppError } from '../../utils/AppError'
 import { generateAccountNumber } from '../../utils/generators'
@@ -118,6 +120,51 @@ export async function updateUser(userId: string, changes: UpdateUserInput) {
 
   const summaries = await accountSummaryByUser([user.id])
   return toAdminUser(user, summaries.get(user.id))
+}
+
+/**
+ * Removes a customer and everything owned by them.
+ *
+ * `transfers.source_account_id` is ON DELETE RESTRICT, so the rows have to be
+ * cleared in dependency order rather than relying on the cascade from `users`.
+ */
+export async function deleteUser(actorId: string, userId: string) {
+  const user = await userRepository().findOne({ where: { id: userId } })
+  if (!user) throw AppError.notFound('User not found')
+
+  if (userId === actorId) {
+    throw AppError.badRequest('You cannot delete your own account')
+  }
+
+  if (user.role === 'admin') {
+    const admins = await userRepository().countBy({ role: 'admin' })
+    if (admins <= 1) {
+      throw AppError.badRequest('The last remaining administrator cannot be deleted')
+    }
+  }
+
+  return AppDataSource.transaction(async (manager) => {
+    const accounts = await manager.find(Account, { where: { userId }, select: { id: true } })
+    const accountIds = accounts.map((account) => account.id)
+
+    // Transfers sent *to* this user by others keep their record but must stop
+    // pointing at accounts that are about to disappear.
+    if (accountIds.length > 0) {
+      await manager.update(
+        Transfer,
+        { destinationAccountId: In(accountIds) },
+        { destinationAccountId: null },
+      )
+    }
+
+    await manager.delete(Transaction, { userId })
+    await manager.delete(Transfer, { userId })
+    await manager.delete(Card, { userId })
+    await manager.delete(Account, { userId })
+    await manager.delete(User, { id: userId })
+
+    return { id: userId }
+  })
 }
 
 async function reserveAccountNumber(): Promise<string> {
