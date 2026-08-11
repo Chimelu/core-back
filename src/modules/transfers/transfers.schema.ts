@@ -22,6 +22,10 @@ export const localTransferSchema = z.object({
   recipientName: z.string().trim().min(2).max(120),
   recipientAccountNumber: z.string().trim().min(6).max(40),
   bankName: z.string().trim().min(2).max(120),
+  routingNumber: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{9}$/, 'Enter the 9 digit routing number'),
   amount,
   description,
 })

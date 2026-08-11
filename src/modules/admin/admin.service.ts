@@ -330,6 +330,13 @@ export async function updateTransaction(
 
     await manager.save(tx)
 
+    // created_at is a CreateDateColumn, so TypeORM ignores it on save — a custom
+    // posting date has to be written with a follow-up update.
+    if (changes.date) {
+      await manager.update(Transaction, { id: tx.id }, { createdAt: changes.date })
+      tx.createdAt = changes.date
+    }
+
     return {
       id: tx.id,
       accountId: tx.accountId,

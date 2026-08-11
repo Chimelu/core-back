@@ -74,13 +74,16 @@ export const adminUpdateTransactionSchema = z
     category: z.string().trim().min(1).max(40).optional(),
     amount: z.coerce.number().positive().max(10_000_000).optional(),
     direction: z.enum(['credit', 'debit']).optional(),
+    // Posting date; rewrites the ledger entry's created_at.
+    date: z.coerce.date().optional(),
   })
   .refine(
     (value) =>
       value.description !== undefined ||
       value.category !== undefined ||
       value.amount !== undefined ||
-      value.direction !== undefined,
+      value.direction !== undefined ||
+      value.date !== undefined,
     { message: 'Provide at least one field to update' },
   )
 

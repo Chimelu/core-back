@@ -75,6 +75,10 @@ export class Transfer {
   @Column({ name: 'swift_code', type: 'varchar', length: 20, nullable: true })
   swiftCode: string | null
 
+  /** Local only: the receiving bank's routing (ABA) number. */
+  @Column({ name: 'routing_number', type: 'varchar', length: 20, nullable: true })
+  routingNumber: string | null
+
   /** International only: where the receiving bank is located. */
   @Column({ name: 'bank_country', type: 'varchar', length: 90, nullable: true })
   bankCountry: string | null

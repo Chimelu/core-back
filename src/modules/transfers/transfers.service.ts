@@ -157,6 +157,7 @@ async function createExternalTransfer(
     recipientName: string
     recipientAccountNumber: string
     bankName: string
+    routingNumber?: string | null
     swiftCode?: string | null
     bankCountry?: string | null
     bankAddress?: string | null
@@ -190,6 +191,7 @@ async function createExternalTransfer(
         recipientName: input.recipientName,
         recipientAccountNumber: input.recipientAccountNumber,
         recipientBankName: input.bankName,
+        routingNumber: input.routingNumber ?? null,
         swiftCode: input.swiftCode ?? null,
         bankCountry: input.bankCountry ?? null,
         bankAddress: input.bankAddress ?? null,
