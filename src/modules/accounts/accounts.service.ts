@@ -1,7 +1,8 @@
-import type { EntityManager, FindOptionsWhere } from 'typeorm'
+import { In, type EntityManager, type FindOptionsWhere } from 'typeorm'
 import { AppDataSource } from '../../config/data-source'
 import { Account, type AccountType } from '../../entities/Account'
 import { Transaction } from '../../entities/Transaction'
+import { Transfer } from '../../entities/Transfer'
 import { AppError } from '../../utils/AppError'
 import { generateAccountNumber } from '../../utils/generators'
 import { fromCents, toCents } from '../../utils/money'
@@ -123,13 +124,62 @@ export async function listUserTransactions(
 
   const [transactions, total] = await AppDataSource.getRepository(Transaction).findAndCount({
     where,
+    relations: { account: true },
     order: { createdAt: 'DESC' },
     skip: (filters.page - 1) * filters.limit,
     take: filters.limit,
   })
 
+  // Entries booked by a transfer inherit its status and carry the recipient
+  // details the receipt shows. Everything else (deposits, fees, adjustments)
+  // is settled the moment it is written.
+  const transferIds = [
+    ...new Set(transactions.map((tx) => tx.transferId).filter((id): id is string => id !== null)),
+  ]
+
+  const transfers =
+    transferIds.length > 0
+      ? await AppDataSource.getRepository(Transfer).find({ where: { id: In(transferIds) } })
+      : []
+
+  const transferById = new Map(transfers.map((transfer) => [transfer.id, transfer]))
+
   return {
-    transactions,
+    transactions: transactions.map((tx) => {
+      const transfer = tx.transferId ? transferById.get(tx.transferId) ?? null : null
+
+      return {
+        id: tx.id,
+        accountId: tx.accountId,
+        accountName: tx.account?.name ?? null,
+        accountNumber: tx.account?.accountNumber ?? null,
+        direction: tx.direction,
+        amount: tx.amount,
+        balanceAfter: tx.balanceAfter,
+        category: tx.category,
+        description: tx.description,
+        reference: tx.reference,
+        status: transfer?.status ?? 'completed',
+        createdAt: tx.createdAt,
+        transfer: transfer
+          ? {
+              id: transfer.id,
+              reference: transfer.reference,
+              kind: transfer.kind,
+              status: transfer.status,
+              fee: transfer.fee,
+              currency: transfer.currency,
+              recipientName: transfer.recipientName,
+              recipientAccountNumber: transfer.recipientAccountNumber,
+              recipientBankName: transfer.recipientBankName,
+              routingNumber: transfer.routingNumber,
+              swiftCode: transfer.swiftCode,
+              bankCountry: transfer.bankCountry,
+              completedAt: transfer.completedAt,
+            }
+          : null,
+      }
+    }),
     pagination: {
       page: filters.page,
       limit: filters.limit,
