@@ -175,8 +175,7 @@ async function createExternalTransfer(
 
     const reference = generateReference(kind === 'local' ? 'LCL' : 'INT')
 
-    // Funds leave immediately but settlement with the receiving bank is async,
-    // so the transfer stays pending until it is marked settled.
+    // Funds leave immediately and the transfer is booked as settled.
     const transfer = await manager.save(
       manager.create(Transfer, {
         reference,
@@ -184,7 +183,8 @@ async function createExternalTransfer(
         sourceAccountId: source.id,
         destinationAccountId: null,
         kind,
-        status: 'pending',
+        status: 'completed',
+        completedAt: new Date(),
         amount: input.amount,
         fee: input.fee,
         currency: source.currency,

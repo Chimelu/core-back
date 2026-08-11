@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
 import { authenticate } from '../../middleware/authenticate'
+import { requireActiveUser } from '../../middleware/requireActiveUser'
 import { validateBody } from '../../middleware/validate'
 import { asyncHandler } from '../../utils/asyncHandler'
 import * as transfersController from './transfers.controller'
@@ -31,21 +32,25 @@ transfersRouter.get('/config', asyncHandler(transfersController.config))
 transfersRouter.get('/resolve-account', asyncHandler(transfersController.resolve))
 transfersRouter.get('/:id', asyncHandler(transfersController.detail))
 
+// Suspended and closed users keep read access to their history but cannot move money.
 transfersRouter.post(
   '/coretrust',
   transferLimiter,
+  asyncHandler(requireActiveUser),
   validateBody(coreTrustTransferSchema),
   asyncHandler(transfersController.coretrust),
 )
 transfersRouter.post(
   '/local',
   transferLimiter,
+  asyncHandler(requireActiveUser),
   validateBody(localTransferSchema),
   asyncHandler(transfersController.local),
 )
 transfersRouter.post(
   '/international',
   transferLimiter,
+  asyncHandler(requireActiveUser),
   validateBody(internationalTransferSchema),
   asyncHandler(transfersController.international),
 )
