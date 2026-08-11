@@ -5,6 +5,7 @@ import type {
   LoginInput,
   RefreshInput,
   RegisterInput,
+  SetTransactionPinInput,
   UpdateProfileInput,
 } from './auth.schema'
 
@@ -43,6 +44,15 @@ export async function me(req: Request, res: Response) {
 export async function updateMe(req: Request, res: Response) {
   if (!req.auth) throw AppError.unauthorized()
   const user = await authService.updateProfile(req.auth.sub, req.body as UpdateProfileInput)
+  res.status(200).json({ success: true, data: { user } })
+}
+
+export async function updateTransactionPin(req: Request, res: Response) {
+  if (!req.auth) throw AppError.unauthorized()
+  const user = await authService.setTransactionPin(
+    req.auth.sub,
+    req.body as SetTransactionPinInput,
+  )
   res.status(200).json({ success: true, data: { user } })
 }
 

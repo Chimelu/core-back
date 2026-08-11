@@ -9,6 +9,7 @@ import { AppError } from '../../utils/AppError'
 import { generateReference } from '../../utils/generators'
 import { fromCents, toCents } from '../../utils/money'
 import { applyCredit, applyDebit } from '../accounts/accounts.service'
+import { assertTransactionPin } from '../auth/auth.service'
 import type {
   CoreTrustTransferInput,
   InternationalTransferInput,
@@ -62,6 +63,8 @@ export async function resolveRecipient(accountNumber: string) {
 }
 
 export async function createCoreTrustTransfer(userId: string, input: CoreTrustTransferInput) {
+  await assertTransactionPin(userId, input.pin)
+
   return AppDataSource.transaction(async (manager) => {
     const source = await lockSourceAccount(manager, userId, input.sourceAccountId)
 
@@ -157,6 +160,7 @@ async function createExternalTransfer(
     recipientName: string
     recipientAccountNumber: string
     bankName: string
+    pin: string
     routingNumber?: string | null
     swiftCode?: string | null
     bankCountry?: string | null
@@ -167,6 +171,8 @@ async function createExternalTransfer(
     fee: number
   },
 ) {
+  await assertTransactionPin(userId, input.pin)
+
   return AppDataSource.transaction(async (manager) => {
     const source = await lockSourceAccount(manager, userId, input.sourceAccountId)
     const total = fromCents(toCents(input.amount) + toCents(input.fee))

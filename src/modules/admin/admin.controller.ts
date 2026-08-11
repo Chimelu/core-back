@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express'
 import { AppError } from '../../utils/AppError'
+import { setTransactionPinForUser } from '../auth/auth.service'
+import type { AdminSetTransactionPinInput } from '../auth/auth.schema'
 import * as adminService from './admin.service'
 import {
   adminListAccountsQuerySchema,
@@ -65,6 +67,12 @@ export async function createTransaction(req: Request, res: Response) {
     req.body as AdminCreateTransactionInput,
   )
   res.status(201).json({ success: true, data: { transaction } })
+}
+
+export async function updateUserPin(req: Request, res: Response) {
+  const { pin } = req.body as AdminSetTransactionPinInput
+  const user = await setTransactionPinForUser(req.params.id, pin)
+  res.json({ success: true, data: { user } })
 }
 
 export async function updateTransaction(req: Request, res: Response) {

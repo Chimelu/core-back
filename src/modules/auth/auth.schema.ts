@@ -8,6 +8,12 @@ const password = z
   .regex(/[A-Z]/, 'Password must contain an uppercase letter')
   .regex(/[0-9]/, 'Password must contain a number')
 
+/** 4 digit PIN confirming money movement. Kept separate from the password. */
+const transactionPin = z
+  .string()
+  .trim()
+  .regex(/^[0-9]{4}$/, 'PIN must be exactly 4 digits')
+
 export const registerSchema = z.object({
   firstName: z.string().trim().min(2, 'First name is too short').max(60),
   lastName: z.string().trim().min(2, 'Last name is too short').max(60),
@@ -18,6 +24,20 @@ export const registerSchema = z.object({
     .regex(/^\+?[0-9\s-]{7,20}$/, 'Enter a valid phone number')
     .optional(),
   password,
+  pin: transactionPin,
+})
+
+/**
+ * Sets or rotates the transfer PIN. `currentPin` is required only once a PIN
+ * exists — customers who never had one can set it straight away.
+ */
+export const setTransactionPinSchema = z.object({
+  currentPin: transactionPin.optional(),
+  pin: transactionPin,
+})
+
+export const adminSetTransactionPinSchema = z.object({
+  pin: transactionPin,
 })
 
 export const loginSchema = z.object({
@@ -45,6 +65,8 @@ export const updateProfileSchema = z.object({
   country: z.string().trim().max(90).optional(),
 })
 
+export type SetTransactionPinInput = z.infer<typeof setTransactionPinSchema>
+export type AdminSetTransactionPinInput = z.infer<typeof adminSetTransactionPinSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type RefreshInput = z.infer<typeof refreshSchema>

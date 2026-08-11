@@ -4,7 +4,13 @@ import { authenticate } from '../../middleware/authenticate'
 import { validateBody } from '../../middleware/validate'
 import { asyncHandler } from '../../utils/asyncHandler'
 import * as authController from './auth.controller'
-import { loginSchema, refreshSchema, registerSchema, updateProfileSchema } from './auth.schema'
+import {
+  loginSchema,
+  refreshSchema,
+  registerSchema,
+  setTransactionPinSchema,
+  updateProfileSchema,
+} from './auth.schema'
 
 const credentialsLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -16,6 +22,21 @@ const credentialsLimiter = rateLimit({
     error: {
       code: 'TOO_MANY_REQUESTS',
       message: 'Too many attempts. Please try again in a few minutes.',
+    },
+  },
+})
+
+// Separate budget from login so PIN changes cannot exhaust sign-in attempts.
+const pinLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many PIN attempts. Please try again in a few minutes.',
     },
   },
 })
@@ -48,8 +69,9 @@ authRouter.patch(
 )
 
 authRouter.patch(
-  '/me',
+  '/me/pin',
+  pinLimiter,
   authenticate,
-  validateBody(updateProfileSchema),
-  asyncHandler(authController.updateMe),
+  validateBody(setTransactionPinSchema),
+  asyncHandler(authController.updateTransactionPin),
 )

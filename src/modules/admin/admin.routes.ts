@@ -3,6 +3,7 @@ import { authenticate } from '../../middleware/authenticate'
 import { authorize } from '../../middleware/authorize'
 import { validateBody } from '../../middleware/validate'
 import { asyncHandler } from '../../utils/asyncHandler'
+import { adminSetTransactionPinSchema } from '../auth/auth.schema'
 import * as adminController from './admin.controller'
 import {
   adminCreateAccountSchema,
@@ -23,6 +24,11 @@ adminRouter.patch(
   '/users/:id',
   validateBody(updateUserSchema),
   asyncHandler(adminController.updateUser),
+)
+adminRouter.patch(
+  '/users/:id/pin',
+  validateBody(adminSetTransactionPinSchema),
+  asyncHandler(adminController.updateUserPin),
 )
 adminRouter.delete('/users/:id', asyncHandler(adminController.deleteUser))
 

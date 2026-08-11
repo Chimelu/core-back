@@ -6,7 +6,12 @@ import { AppError } from '../../utils/AppError'
 import { hashPassword, verifyPassword } from '../../utils/password'
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../../utils/tokens'
 import { createAccountFor } from '../accounts/accounts.service'
-import type { LoginInput, RegisterInput, UpdateProfileInput } from './auth.schema'
+import type {
+  LoginInput,
+  RegisterInput,
+  SetTransactionPinInput,
+  UpdateProfileInput,
+} from './auth.schema'
 
 const userRepository = () => AppDataSource.getRepository(User)
 const refreshTokenRepository = () => AppDataSource.getRepository(RefreshToken)
@@ -23,6 +28,8 @@ export type PublicUser = {
   role: User['role']
   status: User['status']
   emailVerified: boolean
+  /** Lets the UI prompt for setup instead of failing at transfer time. */
+  hasTransactionPin: boolean
   createdAt: Date
 }
 
@@ -44,6 +51,7 @@ export function toPublicUser(user: User): PublicUser {
     role: user.role,
     status: user.status,
     emailVerified: user.emailVerified,
+    hasTransactionPin: user.transactionPinHash !== null,
     createdAt: user.createdAt,
   }
 }
@@ -76,6 +84,7 @@ export async function register(input: RegisterInput, context: SessionContext) {
   }
 
   const passwordHash = await hashPassword(input.password)
+  const transactionPinHash = await hashPassword(input.pin)
 
   const { user, account } = await AppDataSource.transaction(async (manager) => {
     const created = await manager.save(
@@ -85,6 +94,7 @@ export async function register(input: RegisterInput, context: SessionContext) {
         email: input.email,
         phone: input.phone ?? null,
         passwordHash,
+        transactionPinHash,
       }),
     )
 
@@ -171,6 +181,71 @@ export async function getProfile(userId: string) {
 export async function getUsers() {
   const users = await userRepository().find()
   return users.map(toPublicUser)
+}
+
+/**
+ * Sets or rotates the customer's own transfer PIN. Once a PIN exists the
+ * current one has to be supplied, so a hijacked session cannot silently
+ * replace it.
+ */
+export async function setTransactionPin(userId: string, input: SetTransactionPinInput) {
+  const user = await userRepository().findOne({ where: { id: userId } })
+  if (!user) throw AppError.notFound('User not found')
+
+  if (user.transactionPinHash) {
+    if (!input.currentPin) {
+      throw AppError.badRequest('Enter your current PIN', [
+        { field: 'currentPin', message: 'Enter your current PIN' },
+      ])
+    }
+
+    const matches = await verifyPassword(input.currentPin, user.transactionPinHash)
+    if (!matches) {
+      throw AppError.badRequest('Your current PIN is incorrect', [
+        { field: 'currentPin', message: 'Incorrect PIN' },
+      ])
+    }
+  }
+
+  user.transactionPinHash = await hashPassword(input.pin)
+  await userRepository().save(user)
+
+  return toPublicUser(user)
+}
+
+/** Admin override: replaces a customer's PIN without knowing the old one. */
+export async function setTransactionPinForUser(userId: string, pin: string) {
+  const user = await userRepository().findOne({ where: { id: userId } })
+  if (!user) throw AppError.notFound('User not found')
+
+  user.transactionPinHash = await hashPassword(pin)
+  await userRepository().save(user)
+
+  return toPublicUser(user)
+}
+
+/**
+ * Gate in front of every money movement. Throws a coded error the UI can act
+ * on: prompt for setup, or flag the PIN field as wrong.
+ */
+export async function assertTransactionPin(userId: string, pin: string) {
+  const user = await userRepository().findOne({ where: { id: userId } })
+  if (!user) throw AppError.unauthorized('User not found')
+
+  if (!user.transactionPinHash) {
+    throw new AppError(
+      400,
+      'TRANSACTION_PIN_NOT_SET',
+      'Set your 4 digit transaction PIN in Settings before sending money',
+    )
+  }
+
+  const matches = await verifyPassword(pin, user.transactionPinHash)
+  if (!matches) {
+    throw new AppError(400, 'INVALID_TRANSACTION_PIN', 'Incorrect transaction PIN', [
+      { field: 'pin', message: 'Incorrect PIN' },
+    ])
+  }
 }
 
 export async function updateProfile(userId: string, input: UpdateProfileInput) {

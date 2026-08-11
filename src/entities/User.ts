@@ -33,6 +33,10 @@ export class User {
   @Column({ name: 'password_hash', type: 'varchar' })
   passwordHash: string
 
+  /** bcrypt hash of the 4 digit transfer PIN. Null until the customer sets one. */
+  @Column({ name: 'transaction_pin_hash', type: 'varchar', nullable: true })
+  transactionPinHash: string | null
+
   @Column({ type: 'varchar', length: 180, nullable: true })
   address: string | null
 

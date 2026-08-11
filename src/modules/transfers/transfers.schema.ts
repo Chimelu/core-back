@@ -7,6 +7,12 @@ const amount = z.coerce
 
 const description = z.string().trim().max(255).optional()
 
+/** Confirms the customer authorised this transfer. */
+const pin = z
+  .string()
+  .trim()
+  .regex(/^[0-9]{4}$/, 'Enter your 4 digit transaction PIN')
+
 export const coreTrustTransferSchema = z.object({
   sourceAccountId: z.string().uuid('Select a valid source account'),
   recipientAccountNumber: z
@@ -15,6 +21,7 @@ export const coreTrustTransferSchema = z.object({
     .regex(/^[0-9]{10}$/, 'CoreTrust account numbers are 10 digits'),
   amount,
   description,
+  pin,
 })
 
 export const localTransferSchema = z.object({
@@ -28,6 +35,7 @@ export const localTransferSchema = z.object({
     .regex(/^[0-9]{9}$/, 'Enter the 9 digit routing number'),
   amount,
   description,
+  pin,
 })
 
 export const internationalTransferSchema = z.object({
@@ -45,6 +53,7 @@ export const internationalTransferSchema = z.object({
     .regex(/^[A-Z0-9]{8,11}$/, 'Enter a valid routing number or SWIFT/BIC code'),
   amount,
   description,
+  pin,
 })
 
 export const listTransfersQuerySchema = z.object({

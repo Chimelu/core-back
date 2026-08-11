@@ -33,6 +33,7 @@ export type AdminUser = {
   role: User['role']
   status: User['status']
   emailVerified: boolean
+  hasTransactionPin: boolean
   accountCount: number
   totalBalance: number
   primaryAccountId: string | null
@@ -51,6 +52,7 @@ function toAdminUser(user: User, summary: AccountSummary | undefined): AdminUser
     role: user.role,
     status: user.status,
     emailVerified: user.emailVerified,
+    hasTransactionPin: user.transactionPinHash !== null,
     accountCount: summary?.count ?? 0,
     totalBalance: summary?.total ?? 0,
     primaryAccountId: summary?.primaryAccountId ?? null,
